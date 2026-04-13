@@ -1,0 +1,85 @@
+{{template "header"}}
+<style>
+    .deployment-guide {
+        padding: 24px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    }
+    .deployment-section {
+
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 8px;
+    }
+    .el-input {
+        width: 100%;
+    }
+    .el-input__inner {
+        height: 40px;
+        font-size: 14px;
+        padding: 0 12px;
+    }
+    .el-step__title {
+        font-size: 14px;
+    }
+    .el-step__description {
+        font-size: 12px;
+    }
+    h2 {
+        color: #303133;
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+    h3 {
+        color: #606266;
+        font-size: 18px;
+        margin-bottom: 16px;
+    }
+    #app {
+        background: #f5f7fa;
+    }
+    .el-card {
+        border-radius: 8px;
+    }
+    .el-card__header {
+        padding: 18px 20px;
+    }
+</style>
+<div id="app" style="width:100%;background: #f5f7fa">
+    <template>
+        <div style="padding: 20px">
+            <el-card class="deployment-guide">
+                <div slot="header" class="clearfix">
+                    <h2>快速开始</h2>
+                </div>
+
+                <div class="deployment-section">
+                    <p>快速访问在线客服聊天界面</p>
+                    <p>您的在线客服地址：</p>
+                    <el-input v-model="chatEndpoint" readonly style="width: 100%; margin-top: 10px;">
+                        <el-button slot="append" icon="el-icon-link"
+                                   v-on:click="openChatWindow(chatEndpoint)"
+                                   title="在新窗口打开"></el-button>
+                        <el-button slot="append" icon="el-icon-document-copy"
+                                   v-on:click="copyText(chatEndpoint)"
+                                   title="复制链接"></el-button>
+                    </el-input>
+                </div>
+                <div class="deployment-section">
+                    <p>将以下代码复制粘贴到网页底部（&lt;/body>标签之前）。</p>
+                    <el-input style="width: 100%; margin-top: 10px;" type="textarea" v-model="deployCode"  :rows="20" readonly>
+                    </el-input>
+                </div>
+            </el-card>
+        </div>
+
+    </template>
+
+</div>
+</body>
+
+<script>
+    const ACTION="pannel";
+</script>
+{{template "setting_bottom" .}}
