@@ -2,13 +2,12 @@ package ws
 
 import (
 	"encoding/json"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"goflylivechat/common"
 	"goflylivechat/models"
 	"log"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 func NewVisitorServer(c *gin.Context) {
@@ -141,17 +140,35 @@ func VisitorNotice(visitorId string, notice string) {
 	}
 	visitor.Conn.WriteMessage(websocket.TextMessage, str)
 }
-func VisitorMessage(visitorId, content string, kefuInfo models.User) {
+func VisitorMessage(visitorId, content string, kefuInfo models.User, messageId uint) {
 	msg := TypeMessage{
 		Type: "message",
 		Data: ClientMessage{
-			Name:    kefuInfo.Nickname,
-			Avator:  kefuInfo.Avator,
-			Id:      kefuInfo.Name,
-			Time:    time.Now().Format("2006-01-02 15:04:05"),
-			ToId:    visitorId,
-			Content: content,
-			IsKefu:  "no",
+			Name:      kefuInfo.Nickname,
+			Avator:    kefuInfo.Avator,
+			Id:        kefuInfo.Name,
+			MessageId: messageId,
+			Time:      time.Now().Format("2006-01-02 15:04:05"),
+			ToId:      visitorId,
+			Content:   content,
+			IsKefu:    "no",
+		},
+	}
+	str, _ := json.Marshal(msg)
+	visitor, ok := ClientList[visitorId]
+	if !ok || visitor == nil || visitor.Conn == nil {
+		return
+	}
+	visitor.Conn.WriteMessage(websocket.TextMessage, str)
+}
+
+func VisitorRecallMessage(visitorId string, messageId uint) {
+	msg := TypeMessage{
+		Type: "message_recall",
+		Data: RecallMessage{
+			VisitorId: visitorId,
+			MessageId: messageId,
+			Content:   models.RecalledMessageContent,
 		},
 	}
 	str, _ := json.Marshal(msg)
@@ -166,9 +183,9 @@ func VisitorAutoReply(vistorInfo models.Visitor, kefuInfo models.User, content s
 	reply := models.FindReplyItemByUserIdTitle(kefuInfo.Name, content)
 	if reply.Content != "" {
 		time.Sleep(1 * time.Second)
-		VisitorMessage(vistorInfo.VisitorId, reply.Content, kefuInfo)
-		messageId := models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, reply.Content, "kefu")
-		KefuMessage(vistorInfo.VisitorId, reply.Content, kefuInfo, messageId)
+		message := models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, reply.Content, "kefu")
+		VisitorMessage(vistorInfo.VisitorId, reply.Content, kefuInfo, message.ID)
+		KefuMessage(vistorInfo.VisitorId, reply.Content, kefuInfo, message.ID)
 	}
 	if !ok || kefu == nil {
 		time.Sleep(1 * time.Second)
@@ -176,9 +193,9 @@ func VisitorAutoReply(vistorInfo models.Visitor, kefuInfo models.User, content s
 		if config.ConfValue == "" || reply.Content != "" {
 			return
 		}
-		VisitorMessage(vistorInfo.VisitorId, config.ConfValue, kefuInfo)
-		messageId := models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, config.ConfValue, "kefu")
-		KefuMessage(vistorInfo.VisitorId, config.ConfValue, kefuInfo, messageId)
+		message := models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, config.ConfValue, "kefu")
+		VisitorMessage(vistorInfo.VisitorId, config.ConfValue, kefuInfo, message.ID)
+		KefuMessage(vistorInfo.VisitorId, config.ConfValue, kefuInfo, message.ID)
 	}
 }
 func CleanVisitorExpire() {
@@ -186,7 +203,7 @@ func CleanVisitorExpire() {
 		log.Println("cleanVisitorExpire start...")
 		for {
 			for _, user := range ClientList {
-				diff := time.Since(user.UpdateTime).Seconds()
+				diff := time.Now().Sub(user.UpdateTime).Seconds()
 				if diff >= common.VisitorExpire {
 					msg := TypeMessage{
 						Type: "auto_close",

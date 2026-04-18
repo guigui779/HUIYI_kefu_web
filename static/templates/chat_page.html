@@ -173,6 +173,7 @@
                     this.visitor.to_id=msg.id;
 
                     let content = {}
+                    content.id = msg.message_id;
                     content.avator = msg.avator;
                     content.name = msg.name;
                     content.content =replaceContent(msg.content);
@@ -191,6 +192,18 @@
                     flashTitle();
                     clearInterval(this.timer);
                     this.alertSound();
+                }
+                if (redata.type == "message_recall") {
+                    let recallData = redata.data || {}
+                    if(!recallData.message_id){
+                        return;
+                    }
+                    for(let i=0;i<this.msgList.length;i++){
+                        if(this.msgList[i].id==recallData.message_id){
+                            this.$set(this.msgList[i],"content",replaceContent(recallData.content||"消息已撤回"));
+                            break;
+                        }
+                    }
                 }
                 if (redata.type == "close") {
                     this.chatTitle="会话已结束";
@@ -319,6 +332,7 @@
                             item.is_kefu = false;
                             item.avator=item["visitor_avator"];
                         }
+                        item.id = item["id"];
                         item.time = item["create_time"];
                         item.content=replaceContent(item["content"]);
                         _this.msgList.unshift(item);

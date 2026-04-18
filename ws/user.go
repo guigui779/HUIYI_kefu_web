@@ -2,13 +2,12 @@ package ws
 
 import (
 	"encoding/json"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"goflylivechat/models"
 	"goflylivechat/tools"
 	"log"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 func NewKefuServer(c *gin.Context) {
@@ -81,7 +80,7 @@ func OneKefuMessage(toId string, str []byte) {
 		tools.Logger().Println("send_kefu_message", error, string(str))
 	}
 }
-func KefuMessage(visitorId, content string, kefuInfo models.User, messageId int) {
+func KefuMessage(visitorId, content string, kefuInfo models.User, messageId uint) {
 	msg := TypeMessage{
 		Type: "message",
 		Data: ClientMessage{
@@ -97,6 +96,19 @@ func KefuMessage(visitorId, content string, kefuInfo models.User, messageId int)
 	}
 	str, _ := json.Marshal(msg)
 	OneKefuMessage(kefuInfo.Name, str)
+}
+
+func KefuRecallMessage(kefuId string, visitorId string, messageId uint) {
+	msg := TypeMessage{
+		Type: "message_recall",
+		Data: RecallMessage{
+			VisitorId: visitorId,
+			MessageId: messageId,
+			Content:   models.RecalledMessageContent,
+		},
+	}
+	str, _ := json.Marshal(msg)
+	OneKefuMessage(kefuId, str)
 }
 
 // 给客服客户端发送消息判断客户端是否在线

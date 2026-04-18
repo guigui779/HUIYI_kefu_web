@@ -5,31 +5,31 @@ import (
 	"time"
 )
 
+const RecalledMessageContent = "消息已撤回"
+
 type Message struct {
 	Model
-	KefuId          string `json:"kefu_id"`
-	VisitorId       string `json:"visitor_id"`
-	Content         string `json:"content"`
-	MesType         string `json:"mes_type"`
-	Status          string `json:"status"`
-	RecalledForKefu int    `json:"recalled_for_kefu"`
+	KefuId    string `json:"kefu_id"`
+	VisitorId string `json:"visitor_id"`
+	Content   string `json:"content"`
+	MesType   string `json:"mes_type"`
+	Status    string `json:"status"`
 }
 type MessageKefu struct {
 	Model
-	KefuId          string `json:"kefu_id"`
-	VisitorId       string `json:"visitor_id"`
-	Content         string `json:"content"`
-	MesType         string `json:"mes_type"`
-	Status          string `json:"status"`
-	RecalledForKefu int    `json:"recalled_for_kefu"`
-	VisitorName     string `json:"visitor_name"`
-	VisitorAvator   string `json:"visitor_avator"`
-	KefuName        string `json:"kefu_name"`
-	KefuAvator      string `json:"kefu_avator"`
-	CreateTime      string `json:"create_time"`
+	KefuId        string `json:"kefu_id"`
+	VisitorId     string `json:"visitor_id"`
+	Content       string `json:"content"`
+	MesType       string `json:"mes_type"`
+	Status        string `json:"status"`
+	VisitorName   string `json:"visitor_name"`
+	VisitorAvator string `json:"visitor_avator"`
+	KefuName      string `json:"kefu_name"`
+	KefuAvator    string `json:"kefu_avator"`
+	CreateTime    string `json:"create_time"`
 }
 
-func CreateMessage(kefu_id string, visitor_id string, content string, mes_type string) int {
+func CreateMessage(kefu_id string, visitor_id string, content string, mes_type string) *Message {
 	DB.Exec("set names utf8mb4")
 	v := &Message{
 		KefuId:    kefu_id,
@@ -40,17 +40,23 @@ func CreateMessage(kefu_id string, visitor_id string, content string, mes_type s
 	}
 	v.UpdatedAt = time.Now()
 	DB.Create(v)
-	return int(v.ID)
+	return v
 }
 
-func FindMessageById(messageId int) *Message {
+func RecallKefuMessage(id uint, kefuId string, visitorId string) bool {
+	if id == 0 || kefuId == "" || visitorId == "" {
+		return false
+	}
 	var message Message
-	DB.Where("id = ?", messageId).First(&message)
-	return &message
-}
-
-func MarkMessageRecalledForKefu(messageId int) error {
-	return DB.Model(&Message{}).Where("id = ?", messageId).Update("recalled_for_kefu", 1).Error
+	DB.Where("id = ? and kefu_id = ? and visitor_id = ? and mes_type = ?", id, kefuId, visitorId, "kefu").First(&message)
+	if message.ID == 0 {
+		return false
+	}
+	if message.Content == RecalledMessageContent {
+		return true
+	}
+	DB.Model(&Message{}).Where("id = ?", id).Update("content", RecalledMessageContent)
+	return true
 }
 func FindMessageByVisitorId(visitor_id string) []Message {
 	var messages []Message

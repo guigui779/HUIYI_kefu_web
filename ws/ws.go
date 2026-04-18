@@ -3,6 +3,8 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"goflylivechat/models"
 	"goflylivechat/tools"
 	"log"
@@ -10,9 +12,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 type User struct {
@@ -40,7 +39,7 @@ type ClientMessage struct {
 	Name      string `json:"name"`
 	Avator    string `json:"avator"`
 	Id        string `json:"id"`
-	MessageId int    `json:"message_id"`
+	MessageId uint   `json:"message_id"`
 	VisitorId string `json:"visitor_id"`
 	Group     string `json:"group"`
 	Time      string `json:"time"`
@@ -50,6 +49,12 @@ type ClientMessage struct {
 	ClientIp  string `json:"client_ip"`
 	Refer     string `json:"refer"`
 	IsKefu    string `json:"is_kefu"`
+}
+
+type RecallMessage struct {
+	VisitorId string `json:"visitor_id"`
+	MessageId uint   `json:"message_id"`
+	Content   string `json:"content"`
 }
 
 var ClientList = make(map[string]*User)
