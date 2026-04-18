@@ -56,7 +56,7 @@ func SendMessageV2(c *gin.Context) {
 		return
 	}
 
-	models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, content, cType)
+	messageId := models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, content, cType)
 	//var msg TypeMessage
 	if cType == "kefu" {
 		guest, ok := ws.ClientList[vistorInfo.VisitorId]
@@ -64,7 +64,7 @@ func SendMessageV2(c *gin.Context) {
 		if guest != nil && ok {
 			ws.VisitorMessage(vistorInfo.VisitorId, content, kefuInfo)
 		}
-		ws.KefuMessage(vistorInfo.VisitorId, content, kefuInfo)
+		ws.KefuMessage(vistorInfo.VisitorId, content, kefuInfo, messageId)
 		//msg = TypeMessage{
 		//	Type: "message",
 		//	Data: ws.ClientMessage{
@@ -159,7 +159,7 @@ func SendKefuMessage(c *gin.Context) {
 		return
 	}
 
-	models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, content, cType)
+	messageId := models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, content, cType)
 	//var msg TypeMessage
 
 	guest, ok := ws.ClientList[vistorInfo.VisitorId]
@@ -167,13 +167,53 @@ func SendKefuMessage(c *gin.Context) {
 	if guest != nil && ok {
 		ws.VisitorMessage(vistorInfo.VisitorId, content, kefuInfo)
 	}
-	ws.KefuMessage(vistorInfo.VisitorId, content, kefuInfo)
+	ws.KefuMessage(vistorInfo.VisitorId, content, kefuInfo, messageId)
 	go models.UpdateVisitorLastMessage(vistorInfo.VisitorId, content)
 	c.JSON(200, gin.H{
 		"code": 200,
 		"msg":  "ok",
 	})
 
+}
+
+func RecallKefuMessage(c *gin.Context) {
+	fromId, _ := c.Get("kefu_name")
+	messageIdStr := c.PostForm("message_id")
+	messageId, err := strconv.Atoi(messageIdStr)
+	if err != nil || messageId <= 0 {
+		c.JSON(200, gin.H{
+			"code": 400,
+			"msg":  "message_id不正确",
+		})
+		return
+	}
+	kefuInfo := models.FindUser(fromId.(string))
+	if kefuInfo.ID == 0 {
+		c.JSON(200, gin.H{
+			"code": 400,
+			"msg":  "用户不存在",
+		})
+		return
+	}
+	message := models.FindMessageById(messageId)
+	if message.ID == 0 || message.KefuId != kefuInfo.Name {
+		c.JSON(200, gin.H{
+			"code": 400,
+			"msg":  "消息不存在或无权撤回",
+		})
+		return
+	}
+	if err := models.MarkMessageRecalledForKefu(messageId); err != nil {
+		c.JSON(200, gin.H{
+			"code": 500,
+			"msg":  "撤回失败",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"code": 200,
+		"msg":  "ok",
+	})
 }
 func SendVisitorNotice(c *gin.Context) {
 	notice := c.Query("msg")
@@ -342,8 +382,16 @@ func GetMessagespages(c *gin.Context) {
 	if pageSize > 20 {
 		pageSize = 20
 	}
+	kefuView := c.DefaultQuery("kefu_view", "false") == "true"
 	count := models.CountMessage("visitor_id = ?", visitorId)
 	list := models.FindMessageByPage(uint(page), uint(pageSize), "message.visitor_id = ?", visitorId)
+	if kefuView {
+		for i := range list {
+			if list[i].RecalledForKefu == 1 && list[i].MesType == "kefu" {
+				list[i].Content = "你撤回了一条消息"
+			}
+		}
+	}
 	c.JSON(200, gin.H{
 		"code": 200,
 		"msg":  "ok",

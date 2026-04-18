@@ -203,6 +203,7 @@ func GetVisitors(c *gin.Context) {
 // @Router /messages [get]
 func GetVisitorMessage(c *gin.Context) {
 	visitorId := c.Query("visitorId")
+	kefuView := c.DefaultQuery("kefu_view", "false") == "true"
 
 	query := "message.visitor_id= ?"
 	messages := models.FindMessageByWhere(query, visitorId)
@@ -212,6 +213,9 @@ func GetVisitorMessage(c *gin.Context) {
 
 		item["time"] = message.CreatedAt.Format("2006-01-02 15:04:05")
 		item["content"] = message.Content
+		if kefuView && message.MesType == "kefu" && message.RecalledForKefu == 1 {
+			item["content"] = "你撤回了一条消息"
+		}
 		item["mes_type"] = message.MesType
 		item["visitor_name"] = message.VisitorName
 		item["visitor_avator"] = message.VisitorAvator

@@ -49,6 +49,7 @@ CREATE TABLE `message` (
  `deleted_at` timestamp NULL DEFAULT NULL,
  `mes_type` enum('kefu','visitor') NOT NULL DEFAULT 'visitor',
  `status` enum('read','unread') NOT NULL DEFAULT 'unread',
+ `recalled_for_kefu` tinyint(1) NOT NULL DEFAULT '0',
  PRIMARY KEY (`id`),
  KEY `kefu_id` (`kefu_id`),
  KEY `visitor_id` (`visitor_id`)

@@ -2,10 +2,11 @@ package models
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"goflylivechat/common"
 	"log"
 	"time"
+
+	"github.com/jinzhu/gorm"
 )
 
 var DB *gorm.DB
@@ -34,6 +35,7 @@ func Connect() error {
 	DB.DB().SetMaxIdleConns(10)
 	DB.DB().SetMaxOpenConns(100)
 	DB.DB().SetConnMaxLifetime(59 * time.Second)
+	DB.AutoMigrate(&Message{})
 	return nil
 }
 func Execute(sql string) error {

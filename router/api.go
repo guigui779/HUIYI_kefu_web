@@ -111,6 +111,7 @@ func InitApiRouter(engine *gin.Engine) {
 	{
 		kefuGroup.GET("/chartStatistics", controller.GetChartStatistic)
 		kefuGroup.POST("/message", controller.SendKefuMessage)
+		kefuGroup.POST("/message_recall", controller.RecallKefuMessage)
 	}
 	//微信接口
 	engine.GET("/micro_program", middleware.JwtApiMiddleware, controller.GetCheckWeixinSign)

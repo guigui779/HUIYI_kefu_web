@@ -1,0 +1,10 @@
+{
+  "extends": [
+    "development"
+  ],
+  "hints": {
+    "meta-viewport": "off",
+    "create-element-svg": "off",
+    "no-inline-styles": "off"
+  }
+}

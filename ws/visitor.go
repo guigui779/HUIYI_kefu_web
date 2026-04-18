@@ -2,12 +2,13 @@ package ws
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"goflylivechat/common"
 	"goflylivechat/models"
 	"log"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 func NewVisitorServer(c *gin.Context) {
@@ -166,8 +167,8 @@ func VisitorAutoReply(vistorInfo models.Visitor, kefuInfo models.User, content s
 	if reply.Content != "" {
 		time.Sleep(1 * time.Second)
 		VisitorMessage(vistorInfo.VisitorId, reply.Content, kefuInfo)
-		KefuMessage(vistorInfo.VisitorId, reply.Content, kefuInfo)
-		models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, reply.Content, "kefu")
+		messageId := models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, reply.Content, "kefu")
+		KefuMessage(vistorInfo.VisitorId, reply.Content, kefuInfo, messageId)
 	}
 	if !ok || kefu == nil {
 		time.Sleep(1 * time.Second)
@@ -176,7 +177,8 @@ func VisitorAutoReply(vistorInfo models.Visitor, kefuInfo models.User, content s
 			return
 		}
 		VisitorMessage(vistorInfo.VisitorId, config.ConfValue, kefuInfo)
-		models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, config.ConfValue, "kefu")
+		messageId := models.CreateMessage(kefuInfo.Name, vistorInfo.VisitorId, config.ConfValue, "kefu")
+		KefuMessage(vistorInfo.VisitorId, config.ConfValue, kefuInfo, messageId)
 	}
 }
 func CleanVisitorExpire() {
@@ -184,7 +186,7 @@ func CleanVisitorExpire() {
 		log.Println("cleanVisitorExpire start...")
 		for {
 			for _, user := range ClientList {
-				diff := time.Now().Sub(user.UpdateTime).Seconds()
+				diff := time.Since(user.UpdateTime).Seconds()
 				if diff >= common.VisitorExpire {
 					msg := TypeMessage{
 						Type: "auto_close",

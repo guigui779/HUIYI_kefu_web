@@ -29,6 +29,18 @@
         .chatBoxMe .chatUser{text-align: right}
         .chatBox{width: 100%;height:calc(100% - 170px);;overflow-y: auto;overflow-x: hidden;}
         .chatTime{text-align: center;color: #bbb;margin: 5px 0;font-size: 12px;}
+        .chatUserAction{
+            display: inline-block;
+            margin-left: 8px;
+            color: #409EFF;
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .chatContentRevoked{
+            color: #999;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -99,13 +111,16 @@
                             <a href="javascript:;" class="chatNoticeContent" style="color: #07a9fe;">加载更多消息</a>
                         </div>
 
-                        <el-row :gutter="2" v-for="v in msgList" v-bind:class="{'chatBoxMe': v.is_kefu==true}">
+                        <el-row :gutter="2" v-for="(v,index) in msgList" :key="index" v-bind:class="{'chatBoxMe': v.is_kefu==true}">
                             <div class="chatTime"><{v.time}></div>
                             <div class="chatRow">
                                 <el-avatar v-if="v.is_kefu==false" class="chatRowAvator" :size="48" :src="v.avator"></el-avatar>
                                 <div class="chatMsgContent">
-                                    <div class="chatUser"><{v.name}></div>
-                                    <div class="chatContent" v-html="v.content"></div>
+                                    <div class="chatUser">
+                                        <{v.name}>
+                                        <span v-if="v.is_kefu==true && !v.revoked_local" class="chatUserAction" @click="recallKefuMessage(index)">撤回</span>
+                                    </div>
+                                    <div class="chatContent" :class="{'chatContentRevoked': v.revoked_local}" v-html="v.content"></div>
                                 </div>
                                 <el-avatar v-if="v.is_kefu==true" class="chatRowAvator" :size="48" :src="v.avator"></el-avatar>
                             </div>
@@ -462,8 +477,10 @@
                     let _this=this;
                     content.avator = msg.avator;
                     content.name = msg.name;
+                    content.message_id = msg.message_id || 0;
                     content.content = replaceContent(msg.content);
                     content.is_kefu = msg.is_kefu=="yes"? true:false;
+                    content.revoked_local = false;
                     content.time = msg.time;
                     if (msg.id == this.currentGuest) {
                         this.msgList.push(content);
@@ -692,6 +709,7 @@
                     page:this.messages.page,
                     pagesize: this.messages.pagesize,
                     visitor_id: this.currentGuest,
+                    kefu_view: true,
                 }
                 let _this=this;
                 $.get("/2/messagesPages",params,function(res){
@@ -714,6 +732,8 @@
                             item.name=item["visitor_name"];
                         }
                         item.content=replaceContent(item["content"]);
+                        item.message_id = item["id"];
+                        item.revoked_local = item["recalled_for_kefu"] == 1;
                         item.time = item["create_time"];
                         _this.msgList.unshift(item);
                     }
@@ -728,7 +748,7 @@
                 let _this=this;
                 $.ajax({
                     type:"get",
-                    url:"/messages?visitorId="+visitorId,
+                    url:"/messages?visitorId="+visitorId+"&kefu_view=true",
                     headers:{
                         "token":localStorage.getItem("token")
                     },
@@ -753,7 +773,9 @@
                                     content.avator = visitorMes["visitor_avator"];
                                     content.name = visitorMes["visitor_name"];
                                 }
+                                content.message_id = visitorMes["id"];
                                 content.content = replaceContent(visitorMes["content"]);
+                                content.revoked_local = visitorMes["content"] == "你撤回了一条消息";
                                 content.time = visitorMes["time"];
                                 _this.msgList.push(content);
                                 _this.scrollBottom();
@@ -884,6 +906,23 @@
             },
             replaceContent(content){
                 return replaceContent(content)
+            },
+            recallKefuMessage(index){
+                let item = this.msgList[index];
+                if(!item || item.is_kefu!==true || item.revoked_local===true || !item.message_id){
+                    return;
+                }
+                this.$confirm('撤回后仅客服端可见，访客端不会变更，是否继续？', '确认撤回', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    let _this=this;
+                    _this.sendAjax('/kefu/message_recall','POST',{message_id:item.message_id},function(res){
+                        _this.$set(_this.msgList[index], 'content', '你撤回了一条消息');
+                        _this.$set(_this.msgList[index], 'revoked_local', true);
+                    });
+                }).catch(() => {});
             },
             //滚到底部
             scrollBottom(){

@@ -3,8 +3,6 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"goflylivechat/models"
 	"goflylivechat/tools"
 	"log"
@@ -12,6 +10,9 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 type User struct {
@@ -39,6 +40,7 @@ type ClientMessage struct {
 	Name      string `json:"name"`
 	Avator    string `json:"avator"`
 	Id        string `json:"id"`
+	MessageId int    `json:"message_id"`
 	VisitorId string `json:"visitor_id"`
 	Group     string `json:"group"`
 	Time      string `json:"time"`

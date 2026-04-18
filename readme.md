@@ -1,6 +1,6 @@
 # 中石化 在线聊天
 
-Open-source 在线客服 支持 system, built for modern customer service
+Open-source 在线客服 system, built for modern customer service
 
 **Real-time messaging** - Instant connection between customers and support teams
 
